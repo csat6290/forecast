@@ -89,6 +89,37 @@ async function loadWeather(url) {
     const jsondata = await response.json();
     //console.log("Jsondaten",jsondata);
 
+    //Marker positionieren
+
+   marker.setLatLng([
+       jsondata.geometry.coordinates[1],
+       jsondata.geometry.coordinates[0]
+   ]);
+
+   let details = jsondata.properties.timeseries[0].data.instant.details;
+   //console.log("Aktuelle Wetterdaten", details);
+
+   let forecastDate = new Date(jsondata.properties.timeseries[0].time);
+   //console.log(forecastDate)
+   let forecastLabel = formatDate(forecastDate);
+   //console.log(forecastLabel);
+
+   let popup = `
+   <strong>Wettervorhersage für ${forecastLabel}</strong>
+   <ul>
+   <li>Luftdruck: ${details.air_pressure_at_sea_level} (hPa)</li>
+   <li>Lufttemperatur: ${details.air_temperature} (celsius)</li>
+   <li>Bewölkung: ${details.cloud_area_fraction} (%)</li>
+   <li>Relative Luftfeuchtigkeit: ${details.relative_humidity} (mm)</li>
+   <li>Windrichtung: ${details.wind_from_direction} (%)</li>
+   <li>Windgeschwindigkeit: ${details.wind_speed} (m/s)</li>
+   </ul>
+   `;
+
+   marker.setPopupContent(popup).openPopoup();
+
    
+
+
 };
 loadWeather("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=47.267222&lon=11.392778");
