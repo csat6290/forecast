@@ -108,7 +108,7 @@ async function loadWeather(url) {
    <strong>Wettervorhersage für ${forecastLabel}</strong>
    <ul>
    <li>Luftdruck: ${details.air_pressure_at_sea_level} (hPa)</li>
-   <li>Lufttemperatur: ${details.air_temperature} (celsius)</li>
+   <li>Lufttemperatur: ${details.air_temperature} (°C)</li>
    <li>Bewölkung: ${details.cloud_area_fraction} (%)</li>
    <li>Relative Luftfeuchtigkeit: ${details.relative_humidity} (mm)</li>
    <li>Windrichtung: ${details.wind_from_direction} (%)</li>
@@ -116,10 +116,19 @@ async function loadWeather(url) {
    </ul>
    `;
 
-   marker.setPopupContent(popup).openPopoup();
-
+   marker.setPopupContent(popup).openPopup();
+    
    
-
 
 };
 loadWeather("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=47.267222&lon=11.392778");
+
+ // Auf Klick auf die Karte reagieren
+ map.on("click", function(evt){
+    console.log(evt);
+
+    let url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${evt.latlng.lat}&lon=${evt.latlng.lng}`;
+    console.log(url);
+    
+    loadWeather(url);
+})
