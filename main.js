@@ -28,107 +28,107 @@ L.control.scale({
     imperial: false
 }).addTo(map);
 
-// Datum formatieren (Funktion)
-
-let formatDate = function(date){
+// Datum formatieren
+let formatDate = function (date) {
     return date.toLocaleDateString("de-AT", {
         month: "long",
         day: "numeric",
         hour: "2-digit",
-        minute:"2-digit",
+        minute: "2-digit"
     }) + "Uhr";
-};
+}
 
 // Windvorhersage
 async function loadWind(url) {
-    const response = await fetch (url);
+    const response = await fetch(url);
     const jsondata = await response.json();
-    //console.log("Jsondaten",jsondata);
-    //console.log("Zeitpunkt Erstellung",jsondata[0].header.refTime);
-    //console.log("Zeitpunkt Vorhersage (+Stunden)",jsondata[0].header.forecastTime);
+    // console.log("Jsondaten", jsondata);
+    // console.log("Zeitpunkt Erstellung", jsondata[0].header.refTime);
+    // console.log("Zeitpunkt Vorhersage (+Stunden)", jsondata[0].header.forecastTime);
 
-    // Uhrzeit automatisch anpassen
-    
     let forecastDate = new Date(jsondata[0].header.refTime);
-    //console.log("Echtes Datum Erstellung",forecastDate);
-    forecastDate.setHours(forecastDate.getHours()+ jsondata[0].header.forecastTime);
-    //console.log("Echtes Datum Vorhersage",forecastDate);
-    
+    // console.log("Echtes Datum Erstellung", forecastDate);
+    forecastDate.setHours(forecastDate.getHours() + jsondata[0].header.forecastTime);
+    // console.log("Echtes Datum Vorhersage", forecastDate);
+    // console.log("Vorhersagezeitpunkt", formatDate(forecastDate));
 
     let forecastLabel = formatDate(forecastDate);
-    //console.log("Vorhersagezeitpunkt", forecastLabel);
+    // console.log("Vorhersagezeitpunkt", forecastLabel);
 
-    layerControl.addOverlay(overlays.wind, `ECMWF Windvorhersage für ${forecastLabel}`)
+    layerControl.addOverlay(overlays.wind, `ECMWF Windvorersage für ${forecastLabel}`)
 
     L.velocityLayer({
         data: jsondata,
         lineWidth: 2,
-        displayOptions:{
-            velocityType:"",
-            directionString: "Windrichtung", 
+        displayOptions: {
+            velocityType: "",
+            directionString: "Windrichtung",
             speedString: "Windgeschwindigkeit",
             speedUnit: "k/h",
-            emptyString: "keine Daten vorhanden",
-            position: "bottomright",
+            emptyString: "Keine Daten vorhanden",
+            position: "bottomright"
         }
     }).addTo(overlays.wind);
-    
 };
 loadWind("https://geographie.uibk.ac.at/webmapping/ecmwf/data/wind-10u-10v-europe.json");
 
-// Wettervorhersage
-
-layerControl.addOverlay(overlays.weather, "Wettervorhersage api.met.no");
-
+layerControl.addOverlay(overlays.weather, "Wettervorhersage met.no");
 let marker = L.circleMarker([
-    47.267222, 11.392778
+    47.267222,
+    11.392778
 ]).bindPopup("Wettervorhersage").addTo(overlays.weather);
 
+// Wettervorhersagen
 async function loadWeather(url) {
-    const response = await fetch (url);
+    const response = await fetch(url);
     const jsondata = await response.json();
-    //console.log("Jsondaten",jsondata);
+    // console.log("Jsondaten", jsondata);
 
-    //Marker positionieren
+    // Marker positionieren
+    marker.setLatLng([
+        jsondata.geometry.coordinates[1],
+        jsondata.geometry.coordinates[0]
+    ]);
 
-   marker.setLatLng([
-       jsondata.geometry.coordinates[1],
-       jsondata.geometry.coordinates[0]
-   ]);
+    let details = jsondata.properties.timeseries[0].data.instant.details;
+    // console.log("Aktuelle Wetterdaten", details);
 
-   let details = jsondata.properties.timeseries[0].data.instant.details;
-   //console.log("Aktuelle Wetterdaten", details);
+    let forecastDate = new Date(jsondata.properties.timeseries[0].time);
+    // console.log(forecastDate);
+    let forecastLabel = formatDate(forecastDate);
+    // console.log(forecastLabel);
 
-   let forecastDate = new Date(jsondata.properties.timeseries[0].time);
-   //console.log(forecastDate)
-   let forecastLabel = formatDate(forecastDate);
-   //console.log(forecastLabel);
+    let popup = `
+    <strong>Wettervorhersage für ${forecastLabel}</strong>
+    <ul>
+    <li>Luftdruck: ${details.air_pressure_at_sea_level} (hPa)</li>
+    <li>Lufttemperatur: ${details.air_temperature} (°C)</li>
+    <li>Bewölkung: ${details.cloud_area_fraction} (%)</li>
+    <li>Niederschlag: ${details.precipitation_amount} (mm)</li>
+    <li>Relative Luftfeuchtigkeit: ${details.relative_humidity} (%)</li>
+    <li>Windrichtung: ${details.wind_from_direction} (°)</li>
+    <li>Windgeschwindigkeit: ${(details.wind_speed * 3.6).toFixed(1)} (km/h)</li>
+    </ul>
+    `;
 
-   let popup = `
-   <strong>Wettervorhersage für ${forecastLabel}</strong>
-   <ul>
-   <li>Luftdruck: ${details.air_pressure_at_sea_level} (hPa)</li>
-   <li>Lufttemperatur: ${details.air_temperature} (°C)</li>
-   <li>Bewölkung: ${details.cloud_area_fraction} (%)</li>
-   <li>Relative Luftfeuchtigkeit: ${details.relative_humidity} (mm)</li>
-   <li>Windrichtung: ${details.wind_from_direction} (%)</li>
-   <li>Windgeschwindigkeit: ${details.wind_speed} (m/s)</li>
-   </ul>
-   `;
+    // Wettericons
+    for (let i = 0; i <= 24; i += 3) {
+        let symbol = jsondata.properties.timeseries[i].data.next_1_hours.summary.symbol_code;
+        let forecastDate = new Date(jsondata.properties.timeseries[i].time);
+        let forecastLabel = formatDate(forecastDate);
+        popup += `<img src = "icons/${symbol}.svg" title = "${forecastLabel}" alt = "${symbol}"style="width:32px">`;
+    }
 
-   marker.setPopupContent(popup).openPopup();
-    
-   
-
+    marker.setPopupContent(popup).openPopup();
 };
 loadWeather("https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=47.267222&lon=11.392778");
 
- // Auf Klick auf die Karte reagieren
- map.on("click", function(evt){
+// Klick auf die Karte reagieren 
+map.on("click", function (evt) {
     console.log(evt);
 
     let url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${evt.latlng.lat}&lon=${evt.latlng.lng}`;
     console.log(url);
-    
+
     loadWeather(url);
 })
